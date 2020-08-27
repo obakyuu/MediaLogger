@@ -15,7 +15,7 @@ Option Explicit On
 Namespace My
     
     <Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute(),  _
-     Global.System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.6.0.0"),  _
+     Global.System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.7.0.0"),  _
      Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)>  _
     Partial Friend NotInheritable Class MySettings
         Inherits Global.System.Configuration.ApplicationSettingsBase
@@ -80,19 +80,19 @@ Namespace My
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("F12")>  _
-        Public Property KeySet() As String
+         Global.System.Configuration.DefaultSettingValueAttribute("None")>  _
+        Public Property BindKey() As String
             Get
-                Return CType(Me("KeySet"),String)
+                Return CType(Me("BindKey"),String)
             End Get
             Set
-                Me("KeySet") = value
+                Me("BindKey") = value
             End Set
         End Property
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("1")>  _
+         Global.System.Configuration.DefaultSettingValueAttribute("1.1")>  _
         Public Property Version() As Double
             Get
                 Return CType(Me("Version"),Double)
@@ -111,6 +111,18 @@ Namespace My
             End Get
             Set
                 Me("Volume") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("-1")>  _
+        Public Property BindKeyCode() As Integer
+            Get
+                Return CType(Me("BindKeyCode"),Integer)
+            End Get
+            Set
+                Me("BindKeyCode") = value
             End Set
         End Property
     End Class

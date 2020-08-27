@@ -7,7 +7,7 @@ Partial Public Class config
     'プログラム終了判定(True:終了/False:終了しない)
     Private ExitFlag As Boolean = False
     '監視開始フラグ(0:監視していない/1:監視/2:検知後)
-    Private StartFlag As Integer = 0
+    Private ModeFlag As Integer = 0
     'サウンドプレイヤー
     Private mediaPlayer As New WMPLib.WindowsMediaPlayer
     'ストップウォッチ
@@ -18,7 +18,11 @@ Partial Public Class config
     Private LogFileName As String
     'カウンタ(テキストファイル左側のカウンタ)
     Private count As Integer = 1
-    'ロックファイル(監視ディレクトリごと削除されるのを防ぐ目的。隠しファイルで生成され、拡張子は.Lock)
+    'バインドキーコード
+    Private KeyCode As Integer = -1
+    'バインドタイマー
+    Private bindtime As Integer
+    'ロックファイル(監視ディレクトリごと削除されるのを防ぐ隠しファイル)
     Private lockFile As StreamWriter
     'キー監視
     WithEvents KeyboardHooker1 As New KeyboardHooker
@@ -33,15 +37,14 @@ Partial Public Class config
         '最新バージョン確認
         Call UpdateToolStripMenuItem_Click(sender, e)
 
-        '更新しない場合は実行
+        '更新しない場合はそのまま起動
         If ExitFlag = False Then
 
-            'タスクトレイに格納
-            NotifyIcon1.Visible = True
             'FileSystemWacherを無効化(なぜか勝手に有効化されてる時があるため)
             FileSystemWatcher1.EnableRaisingEvents = False
             '前回の設定項目の読み込み
-            KeyComboBox.Text = My.Settings.KeySet
+            KeyBindButton.Text = My.Settings.BindKey
+            KeyCode = My.Settings.BindKeyCode
             MonitorTextBox.Text = My.Settings.MovieRef
             SoundTextBox.Text = My.Settings.SoundRef
             VolumeBar.Value = My.Settings.Volume
@@ -71,6 +74,127 @@ Partial Public Class config
             End If
             '音量調整
             mediaPlayer.settings.volume = VolumeBar.Value
+            '初期化判定
+            GetResetCheck()
+            'スタート判定
+            GetStartState()
+            'タスクトレイに格納
+            NotifyIcon1.Visible = True
+
+        End If
+
+    End Sub
+
+    '==========================================================================
+    'メニューストリップ
+    '==========================================================================
+
+    Private Sub MenuResetToolStripMenuItem_Click(sender As Object, e As EventArgs) _
+        Handles MenuResetToolStripMenuItem.Click
+
+        If MessageBox.Show _
+                ("現在設定されているものを全て初期化しますか？", "確認",
+                 MessageBoxButtons.OKCancel, MessageBoxIcon.Information) _
+                 = DialogResult.OK Then
+            '全ての設定を初期化
+            KeyBindButton.Text = "None"
+            KeyCode = -1
+            '保存
+            My.Settings.BindKey = KeyBindButton.Text
+            My.Settings.BindKeyCode = KeyCode
+            MonitorTextBox.Text = ""
+            SoundTextBox.Text = ""
+            SoundPlayButton.Enabled = False
+            VolumeBar.Value = 100
+            '無効化
+            MenuResetToolStripMenuItem.Enabled = False
+
+        End If
+
+    End Sub
+
+    Private Sub MenuExitToolStripMenuItem_Click(sender As Object, e As EventArgs) _
+        Handles MenuExitToolStripMenuItem.Click
+
+        '終了処理の呼び出し
+        Call ExitToolStripMenuItem_Click(sender, e)
+
+    End Sub
+
+    Private Sub HelpReadToolStripMenuItem_Click(sender As Object, e As EventArgs) _
+        Handles HelpReadToolStripMenuItem.Click
+
+        If MessageBox.Show _
+                ("外部のページへアクセスしてもよろしいですか？" & vbNewLine &
+                "https://github.com/obakyuu/MediaLogger/blob/master/README.md",
+                 My.Application.Info.Title, MessageBoxButtons.OKCancel,
+                 MessageBoxIcon.Information) = DialogResult.OK Then
+            '公開ページへ飛ぶ
+            Process.Start _
+            ("https://github.com/obakyuu/MediaLogger/blob/master/README.md")
+
+        End If
+
+    End Sub
+
+    Private Sub HelpUpdateToolStripMenuItem_Click(sender As Object, e As EventArgs) _
+        Handles HelpUpdateToolStripMenuItem.Click
+
+        '更新確認
+        Call UpdateToolStripMenuItem_Click(sender, e)
+
+    End Sub
+
+    Private Sub HelpGitHubToolStripMenuItem_Click(sender As Object, e As EventArgs) _
+        Handles HelpGitHubToolStripMenuItem.Click
+
+        If MessageBox.Show _
+                ("外部のページへアクセスしてもよろしいですか？" & vbNewLine &
+                "https://github.com/obakyuu/MediaLogger", My.Application.Info.Title,
+                 MessageBoxButtons.OKCancel, MessageBoxIcon.Information) = DialogResult.OK Then
+            '公開ページへ飛ぶ
+            Process.Start _
+            ("https://github.com/obakyuu/MediaLogger")
+
+        End If
+
+    End Sub
+
+    '==========================================================================
+    '各種コンポーネント
+    '==========================================================================
+
+    Private Sub KeyBindButton_Click(sender As Object, e As EventArgs) _
+        Handles KeyBindButton.Click
+
+        If BindTimer.Enabled = False Then
+
+            'キーバインドモード
+            '各種項目を無効化
+            MonitorGroupBox.Enabled = False
+            SoundGroupBox.Enabled = False
+            MenuResetToolStripMenuItem.Enabled = False
+            StartButton.Enabled = False
+            '時間をセット
+            bindtime = 5
+            'キーバインド用メッセージ設定
+            KeyGroupBox.Text = "残り" & bindtime & "秒"
+            ToolTip1.SetToolTip(KeyBindButton, "取り消す場合はボタンをクリック")
+            'タイマー起動
+            BindTimer.Enabled = True
+
+        Else
+
+            'タイマー停止
+            BindTimer.Enabled = False
+            'キーバインド用メッセージ設定
+            KeyGroupBox.Text = "キー設定"
+            ToolTip1.SetToolTip(KeyBindButton, "ログ指定キーを設定します")
+            '各種項目を元に戻す
+            MonitorGroupBox.Enabled = True
+            SoundGroupBox.Enabled = True
+            '初期化判定
+            GetResetCheck()
             'スタート判定
             GetStartState()
 
@@ -78,13 +202,57 @@ Partial Public Class config
 
     End Sub
 
-    Private Sub KeyComboBox_TextChanged(sender As Object, e As EventArgs) _
-        Handles KeyComboBox.TextChanged
+    Private Sub KeyBindButton_KeyDown(sender As Object, e As KeyEventArgs) Handles KeyBindButton.KeyDown
 
-        '保存
-        My.Settings.KeySet = KeyComboBox.Text
-        'スタート判定
-        GetStartState()
+        If BindTimer.Enabled = True Then
+
+            'キーバインド
+            KeyBindButton.Text = e.KeyData.ToString
+            KeyCode = e.KeyCode
+            'タイマー停止
+            BindTimer.Enabled = False
+            'キーバインド用メッセージ設定
+            KeyGroupBox.Text = "キー設定"
+            ToolTip1.SetToolTip(KeyBindButton, "ログ指定キーを設定します")
+            '各種項目を元に戻す
+            MonitorGroupBox.Enabled = True
+            SoundGroupBox.Enabled = True
+            '保存
+            My.Settings.BindKey = KeyBindButton.Text
+            My.Settings.BindKeyCode = KeyCode
+            '初期化判定
+            GetResetCheck()
+            'スタート判定
+            GetStartState()
+
+        End If
+
+    End Sub
+
+    Private Sub BindTimer_Tick(sender As Object, e As EventArgs) Handles BindTimer.Tick
+
+        If bindtime > 0 Then
+
+            'メッセージ更新
+            bindtime -= 1
+            KeyGroupBox.Text = "残り" & bindtime & "秒"
+
+        Else
+
+            '時間切れ
+            BindTimer.Enabled = False
+            'キーバインド用メッセージ設定
+            KeyGroupBox.Text = "キー設定"
+            ToolTip1.SetToolTip(KeyBindButton, "ログ指定キーを設定します")
+            '各種項目を元に戻す
+            MonitorGroupBox.Enabled = True
+            SoundGroupBox.Enabled = True
+            '初期化判定
+            GetResetCheck()
+            'スタート判定
+            GetStartState()
+
+        End If
 
     End Sub
 
@@ -93,6 +261,8 @@ Partial Public Class config
 
         '保存
         My.Settings.MovieRef = MonitorTextBox.Text
+        '初期化判定
+        GetResetCheck()
         'スタート判定
         GetStartState()
 
@@ -134,6 +304,8 @@ Partial Public Class config
                 SoundPlayButton.Enabled = False
             End If
         End If
+        '初期化判定
+        GetResetCheck()
         'スタート判定
         GetStartState()
 
@@ -172,27 +344,17 @@ Partial Public Class config
                 SoundPlayButton.Enabled = True
             End If
         End If
+        '初期化判定
+        GetResetCheck()
         'スタート判定
         GetStartState()
-
-    End Sub
-
-    Private Sub ResetButton_Click(sender As Object, e As EventArgs) _
-        Handles ResetButton.Click
-
-        '全ての設定を初期化
-        KeyComboBox.Text = "F12"
-        MonitorTextBox.Text = ""
-        SoundTextBox.Text = ""
-        SoundPlayButton.Enabled = False
-        VolumeBar.Value = 100
 
     End Sub
 
     Private Sub StartButton_Click(sender As Object, e As EventArgs) _
         Handles StartButton.Click
 
-        If StartFlag = 0 Then
+        If ModeFlag = 0 Then
 
             '監視開始
             Try
@@ -222,13 +384,14 @@ Partial Public Class config
                 KeyGroupBox.Enabled = False
                 MonitorGroupBox.Enabled = False
                 SoundGroupBox.Enabled = False
-                ResetButton.Enabled = False
+                MenuResetToolStripMenuItem.Enabled = False
                 'ボタン表示を変える
                 StartButton.Text = "停止(&T)"
+                ToolTip1.SetToolTip(StartButton, "記録を止める時はクリック")
                 'タスクアイコンを監視モードへ変更する
                 NotifyIcon1.Icon = My.Resources.surveillance_icon
                 'スタートフラグ
-                StartFlag = 1
+                ModeFlag = 1
                 '閉じる
                 Me.Close()
 
@@ -280,13 +443,14 @@ Partial Public Class config
             KeyGroupBox.Enabled = True
             MonitorGroupBox.Enabled = True
             SoundGroupBox.Enabled = True
-            ResetButton.Enabled = True
+            GetResetCheck()
             'フラグ変更
-            StartFlag = 0
+            ModeFlag = 0
             'ターゲット初期化
             TargetFile = ""
             'ボタン表示を戻す
             StartButton.Text = "開始(&T)"
+            ToolTip1.SetToolTip(StartButton, "監視を開始します")
             'タスクアイコンを待機モードへ変更する
             NotifyIcon1.Icon = My.Resources.stand_icon
             'バルーン表示
@@ -304,12 +468,12 @@ Partial Public Class config
     Private Sub FileSystemWatcher1_Created(sender As Object, e As IO.FileSystemEventArgs) _
         Handles FileSystemWatcher1.Created
 
-        If StartFlag = 1 Then
+        If ModeFlag = 1 Then
 
             '計測開始
             sw.Start()
             Timer1.Enabled = True
-            StartFlag = 2
+            ModeFlag = 2
             'Lockファイル削除
             lockFile.Close()
             File.Delete(FileSystemWatcher1.Path & "\.lock")
@@ -335,10 +499,14 @@ Partial Public Class config
         Handles FileSystemWatcher1.Changed
 
         '動画収録終了判定
-        If StartFlag = 2 AndAlso TargetFile = e.FullPath Then
+        If ModeFlag = 2 AndAlso TargetFile = e.FullPath Then
             '終了
             StartButton.PerformClick()
-
+            'フォルダを開く
+            Process.Start(LogFileName.Substring(0, LogFileName.LastIndexOf("\")))
+            '設定ウィンドウ表示
+            Me.WindowState = FormWindowState.Normal
+            ShowInTaskbar = True
         End If
 
     End Sub
@@ -454,7 +622,7 @@ Partial Public Class config
         Handles ExitToolStripMenuItem.Click
 
         '監視中に終了した場合はLockファイルを消す必要がある
-        If StartFlag = 1 Then
+        If ModeFlag = 1 Then
 
             '監視中に関する警告
             If MessageBox.Show _
@@ -470,7 +638,7 @@ Partial Public Class config
 
             End If
 
-        ElseIf StartFlag = 2 Then
+        ElseIf ModeFlag = 2 Then
 
             '記録中に関する警告
             If MessageBox.Show _
@@ -484,9 +652,15 @@ Partial Public Class config
             End If
 
         Else
-            '終了判定
-            ExitFlag = True
-            Me.Close()
+
+            If MessageBox.Show _
+                ("アプリを終了しますか？", "確認", MessageBoxButtons.OKCancel,
+                               MessageBoxIcon.Information) = DialogResult.OK Then
+                '終了判定
+                ExitFlag = True
+                Me.Close()
+
+            End If
 
         End If
 
@@ -502,7 +676,7 @@ Partial Public Class config
             'タスクバーから削除
             ShowInTaskbar = False
             'アプリを終了する方法をバルーンで通知する
-            If StartFlag = 0 Then
+            If ModeFlag = 0 Then
                 '開始ボタンを押した際は強制的にウィンドウが閉じられるので、その時はバルーン通知はしない
                 With NotifyIcon1
                     .BalloonTipIcon = ToolTipIcon.Info
@@ -538,18 +712,37 @@ Partial Public Class config
 
         '全ての値が空か確認
         If VolumeBar.Value = 0 Then
-            If KeyComboBox.Text <> "" AndAlso MonitorTextBox.Text <> "" Then
+            If KeyBindButton.Text <> "None" AndAlso MonitorTextBox.Text <> "" Then
                 StartButton.Enabled = True
             Else
                 StartButton.Enabled = False
             End If
         Else
-            If KeyComboBox.Text <> "" AndAlso MonitorTextBox.Text <> "" AndAlso
+            If KeyBindButton.Text <> "None" AndAlso MonitorTextBox.Text <> "" AndAlso
                 SoundTextBox.Text <> "" Then
                 StartButton.Enabled = True
             Else
                 StartButton.Enabled = False
             End If
+        End If
+
+    End Sub
+
+    '初期化判定
+    Sub GetResetCheck()
+
+        '全ての値が初期値と異なるか確認
+        If KeyBindButton.Text <> "None" Or MonitorTextBox.Text <> "" Or
+            SoundTextBox.Text <> "" Or VolumeBar.Value <> 100 Then
+
+            '初期化が可能
+            MenuResetToolStripMenuItem.Enabled = True
+
+        Else
+
+            '初期化する必要がない
+            MenuResetToolStripMenuItem.Enabled = False
+
         End If
 
     End Sub
@@ -609,9 +802,9 @@ Partial Public Class config
     Sub KeybordHooker1_KeyDown(sender As Object, e As KeyBoardHookerEventArgs) _
         Handles KeyboardHooker1.KeyDown
         'キーが押下判定
-        If CStr(e.vkCode) = GetKeyCombo(KeyComboBox.Text) Then
+        If CStr(e.vkCode) = KeyCode Then
             '監視判定
-            If StartFlag = 0 Then
+            If ModeFlag = 0 Then
 
                 'バルーン表示
                 With NotifyIcon1
@@ -620,7 +813,7 @@ Partial Public Class config
                     .ShowBalloonTip(3000)
                 End With
 
-            ElseIf StartFlag = 1 Then
+            ElseIf ModeFlag = 1 Then
 
                 'バルーン表示
                 With NotifyIcon1
@@ -630,7 +823,7 @@ Partial Public Class config
                     .ShowBalloonTip(3000)
                 End With
 
-            ElseIf StartFlag = 2 Then
+            ElseIf ModeFlag = 2 Then
 
                 'Shift JISで書き込む
                 '書き込むファイルが既に存在している場合は、ファイルの末尾に追加する
@@ -672,156 +865,6 @@ Partial Public Class config
         End Sub
     )
         Await task
-    End Function
-
-
-    'キーコード取得関数
-    Function GetKeyCombo(ByVal CombText As String) As Integer
-
-        Select Case CombText
-            Case "A"
-                Return 65
-            Case "B"
-                Return 66
-            Case "C"
-                Return 67
-            Case "D"
-                Return 68
-            Case "E"
-                Return 69
-            Case "F"
-                Return 70
-            Case "G"
-                Return 71
-            Case "H"
-                Return 72
-            Case "I"
-                Return 73
-            Case "J"
-                Return 74
-            Case "K"
-                Return 75
-            Case "L"
-                Return 76
-            Case "M"
-                Return 77
-            Case "N"
-                Return 78
-            Case "O"
-                Return 79
-            Case "P"
-                Return 80
-            Case "Q"
-                Return 81
-            Case "R"
-                Return 82
-            Case "S"
-                Return 83
-            Case "T"
-                Return 84
-            Case "U"
-                Return 85
-            Case "V"
-                Return 86
-            Case "W"
-                Return 87
-            Case "X"
-                Return 88
-            Case "Y"
-                Return 89
-            Case "Z"
-                Return 90
-            Case "0"
-                Return 48
-            Case "1"
-                Return 49
-            Case "2"
-                Return 50
-            Case "3"
-                Return 51
-            Case "4"
-                Return 52
-            Case "5"
-                Return 53
-            Case "6"
-                Return 54
-            Case "7"
-                Return 55
-            Case "8"
-                Return 56
-            Case "9"
-                Return 57
-            Case "F1"
-                Return 112
-            Case "F2"
-                Return 113
-            Case "F3"
-                Return 114
-            Case "F4"
-                Return 115
-            Case "F5"
-                Return 116
-            Case "F6"
-                Return 117
-            Case "F7"
-                Return 118
-            Case "F8"
-                Return 119
-            Case "F9"
-                Return 120
-            Case "F10"
-                Return 121
-            Case "F11"
-                Return 122
-            Case "F12"
-                Return 123
-            Case "BackSpace"
-                Return 8
-            Case "Enter"
-                Return 13
-            Case "Pause"
-                Return 19
-            Case "変換"
-                Return 28
-            Case "無変換"
-                Return 29
-            Case "Space"
-                Return 32
-            Case "PageUp"
-                Return 33
-            Case "PageDown"
-                Return 34
-            Case "End"
-                Return 35
-            Case "Home"
-                Return 36
-            Case "←"
-                Return 37
-            Case "↑"
-                Return 38
-            Case "→"
-                Return 39
-            Case "↓"
-                Return 40
-            Case "Insert"
-                Return 45
-            Case "Delete"
-                Return 46
-            Case "NumLock"
-                Return 144
-            Case "ScrollLock"
-                Return 145
-            Case "英数"
-                Return 240
-            Case "カタ/ひら"
-                Return 242
-            Case "Tab"
-                Return 9
-            Case Else
-                'デフォルト(F12)
-                Return 123
-        End Select
-
     End Function
 
 End Class
