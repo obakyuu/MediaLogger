@@ -88,7 +88,7 @@
 
 1. タスクトレイにあるMediaLoggerアイコンを右クリック
 1. 終了をクリック
-![008](https://user-images.githubusercontent.com/50388614/91619880-58754480-e9c9-11ea-90ca-f8df8efda8f5.gif)
+<br>![008](https://user-images.githubusercontent.com/50388614/91619880-58754480-e9c9-11ea-90ca-f8df8efda8f5.gif)
 
 ## 更新確認
 
