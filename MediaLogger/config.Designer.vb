@@ -117,15 +117,15 @@ Partial Class config
         Me.KeyGroupBox.Location = New System.Drawing.Point(12, 27)
         Me.KeyGroupBox.Name = "KeyGroupBox"
         Me.KeyGroupBox.Size = New System.Drawing.Size(95, 54)
-        Me.KeyGroupBox.TabIndex = 0
+        Me.KeyGroupBox.TabIndex = 1
         Me.KeyGroupBox.TabStop = False
         Me.KeyGroupBox.Text = "キー設定"
         '
         'KeyBindButton
         '
-        Me.KeyBindButton.Location = New System.Drawing.Point(7, 19)
+        Me.KeyBindButton.Location = New System.Drawing.Point(6, 19)
         Me.KeyBindButton.Name = "KeyBindButton"
-        Me.KeyBindButton.Size = New System.Drawing.Size(80, 23)
+        Me.KeyBindButton.Size = New System.Drawing.Size(83, 23)
         Me.KeyBindButton.TabIndex = 0
         Me.KeyBindButton.Text = "None"
         Me.ToolTip1.SetToolTip(Me.KeyBindButton, "ログ指定キーを設定します")
@@ -138,7 +138,7 @@ Partial Class config
         Me.TimeGroupBox.Location = New System.Drawing.Point(113, 27)
         Me.TimeGroupBox.Name = "TimeGroupBox"
         Me.TimeGroupBox.Size = New System.Drawing.Size(169, 54)
-        Me.TimeGroupBox.TabIndex = 1
+        Me.TimeGroupBox.TabIndex = 2
         Me.TimeGroupBox.TabStop = False
         Me.TimeGroupBox.Text = "計測経過時間"
         '
@@ -160,7 +160,7 @@ Partial Class config
         Me.MonitorGroupBox.Location = New System.Drawing.Point(12, 87)
         Me.MonitorGroupBox.Name = "MonitorGroupBox"
         Me.MonitorGroupBox.Size = New System.Drawing.Size(270, 49)
-        Me.MonitorGroupBox.TabIndex = 2
+        Me.MonitorGroupBox.TabIndex = 3
         Me.MonitorGroupBox.TabStop = False
         Me.MonitorGroupBox.Text = "監視ディレクトリ"
         '
@@ -178,7 +178,7 @@ Partial Class config
         Me.MonitorButton.Name = "MonitorButton"
         Me.MonitorButton.Size = New System.Drawing.Size(75, 23)
         Me.MonitorButton.TabIndex = 1
-        Me.MonitorButton.Text = "参照(&M)"
+        Me.MonitorButton.Text = "参照(&D)"
         Me.ToolTip1.SetToolTip(Me.MonitorButton, "ファイルの生成を感知するディレクトリを指定します")
         Me.MonitorButton.UseVisualStyleBackColor = True
         '
@@ -195,7 +195,7 @@ Partial Class config
         Me.SoundGroupBox.Location = New System.Drawing.Point(12, 142)
         Me.SoundGroupBox.Name = "SoundGroupBox"
         Me.SoundGroupBox.Size = New System.Drawing.Size(270, 74)
-        Me.SoundGroupBox.TabIndex = 3
+        Me.SoundGroupBox.TabIndex = 4
         Me.SoundGroupBox.TabStop = False
         Me.SoundGroupBox.Text = "サウンド"
         '
@@ -260,7 +260,7 @@ Partial Class config
         Me.MenuStrip1.Location = New System.Drawing.Point(0, 0)
         Me.MenuStrip1.Name = "MenuStrip1"
         Me.MenuStrip1.Size = New System.Drawing.Size(297, 24)
-        Me.MenuStrip1.TabIndex = 6
+        Me.MenuStrip1.TabIndex = 0
         Me.MenuStrip1.Text = "MenuStrip1"
         '
         'MenuToolStripMenuItem
